@@ -4,55 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>校园微论坛</title>
-    <!-- 引入 Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ================= CSS 样式 ================= */
-        :root {
-            --primary: #4A90E2;
-            --bg-color: #F4F7F9;
-            --card-bg: #FFFFFF;
-            --text-main: #333333;
-            --text-sub: #888888;
-            --border: #EAEAEA;
-        }
+        :root { --primary: #4A90E2; --bg-color: #F4F7F9; --card-bg: #FFFFFF; --text-main: #333333; --text-sub: #888888; --border: #EAEAEA; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 60px; }
         
-        /* 顶部导航 */
         header { background: var(--primary); color: white; text-align: center; padding: 15px; font-size: 18px; font-weight: bold; position: sticky; top: 0; z-index: 10; }
-        
-        /* 视图切换 */
         .view { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
         .view.active { display: block; }
         
-        /* 卡片与表单 */
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
-        input:focus, textarea:focus { border-color: var(--primary); }
+        input[type="email"], input[type="password"], input[type="text"], textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
         textarea { resize: none; height: 120px; }
         button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        button:active { opacity: 0.8; }
         button.danger { background: #FF5C5C; margin-top: 10px; }
         button.secondary { background: #E0E0E0; color: #333; margin-top: 10px; }
         
-        /* 帖子列表 */
         .post { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .post-header { display: flex; align-items: center; margin-bottom: 10px; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: #ccc; margin-right: 10px; object-fit: cover; }
+        .avatar.clickable { cursor: pointer; border: 2px solid #FFD700; } /* 站主可点击的头像加上金边提示 */
         .post-meta { flex-grow: 1; }
-        .post-author { font-weight: bold; font-size: 15px; }
+        .post-author { font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 5px; }
+        .role-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; }
+        .role-admin { background: #FF9800; }
+        .role-owner { background: #E91E63; }
         .post-time { font-size: 12px; color: var(--text-sub); }
         .post-content { font-size: 15px; line-height: 1.5; margin-bottom: 10px; white-space: pre-wrap; }
         .delete-btn { color: #FF5C5C; font-size: 12px; cursor: pointer; border: none; background: none; padding: 5px; width: auto;}
         
-        /* 底部导航 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid var(--border); max-width: 600px; margin: 0 auto; }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; color: var(--text-sub); font-size: 14px; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
-
-        /* 提示框 */
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; display: none; z-index: 100; }
+        
+        .checkbox-group { display: flex; align-items: center; margin-bottom: 15px; font-size: 14px; color: var(--text-sub); }
+        .checkbox-group input { width: auto; margin: 0 8px 0 0; transform: scale(1.2); }
     </style>
 </head>
 <body>
@@ -60,7 +49,7 @@
     <header>校园微论坛</header>
     <div id="toast">提示信息</div>
 
-    <!-- 1. 登录/注册视图 -->
+    <!-- 1. 登录/注册 -->
     <div id="view-auth" class="view active">
         <div class="card">
             <h2 style="text-align: center; margin-bottom: 20px;">欢迎来到校园社区</h2>
@@ -68,46 +57,43 @@
             <input type="password" id="password" placeholder="密码 (至少6位)">
             <button onclick="handleLogin()">登 录</button>
             <button class="secondary" onclick="handleRegister()">注 册</button>
-            <p style="font-size: 12px; color: var(--text-sub); text-align: center; margin-top: 15px;">首次使用请点击注册，注册后请直接登录</p>
         </div>
     </div>
 
-    <!-- 2. 首页帖子列表视图 -->
+    <!-- 2. 首页 -->
     <div id="view-home" class="view">
-        <div id="post-list">
-            <!-- 帖子将通过 JS 渲染在这里 -->
-        </div>
+        <div id="post-list"></div>
     </div>
 
-    <!-- 3. 发帖视图 -->
+    <!-- 3. 发帖 -->
     <div id="view-post" class="view">
         <div class="card">
             <textarea id="post-content" placeholder="分享校园新鲜事..."></textarea>
+            <label class="checkbox-group">
+                <input type="checkbox" id="is-anonymous"> 匿名发布 (隐藏头像和昵称)
+            </label>
             <button onclick="createPost()">发 布</button>
         </div>
     </div>
 
-    <!-- 4. 个人中心视图 -->
+    <!-- 4. 个人中心 -->
     <div id="view-profile" class="view">
         <div class="card" style="text-align: center;">
             <img id="profile-avatar" class="avatar" style="width: 80px; height: 80px; margin: 0 auto 15px auto; display: block;" src="https://via.placeholder.com/80">
             <input type="file" id="avatar-upload" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
             <button class="secondary" style="width: auto; padding: 5px 15px; font-size: 12px; margin-bottom: 15px;" onclick="document.getElementById('avatar-upload').click()">更换头像</button>
-            
             <input type="text" id="profile-nickname" placeholder="你的昵称">
             <button onclick="updateProfile()">保存资料</button>
         </div>
         
-        <!-- 管理员入口预留 -->
-        <div id="admin-panel" class="card" style="display: none; border-left: 4px solid var(--primary);">
-            <h3>管理员后台</h3>
-            <p style="font-size: 12px; color: var(--text-sub);">功能开发中：全局删帖、用户封禁等...</p>
+        <div id="admin-panel" class="card" style="display: none; border-left: 4px solid #E91E63;">
+            <h3 style="color: #E91E63; margin-bottom: 5px;">👑 站主控制台</h3>
+            <p style="font-size: 12px; color: var(--text-sub);">在首页点击带有金边的用户头像，即可将其设置为管理员或取消管理员。</p>
         </div>
 
         <button class="danger" onclick="handleLogout()">退出登录</button>
     </div>
 
-    <!-- 底部导航栏 (仅登录后显示) -->
     <div id="bottom-nav" class="bottom-nav" style="display: none;">
         <div class="nav-item active" onclick="switchView('home')">首页</div>
         <div class="nav-item" onclick="switchView('post')">发帖</div>
@@ -116,8 +102,7 @@
 
     <script type="module">
         // ================= JS 逻辑 =================
-        
-        // 【修改这里】填入你的 Supabase 项目 URL 和 anon key
+        // 已经为你填入了专属的 Supabase URL 和 Key
         const SUPABASE_URL = 'https://alvbpoqufcepvxzdgfra.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_uEiA_RPTuGqnxfRiiMi9zg_6olo0WL6';
         
@@ -125,7 +110,6 @@
         let currentUser = null;
         let currentProfile = null;
 
-        // --- 工具函数 ---
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
@@ -143,7 +127,6 @@
             } else {
                 document.getElementById(`view-${viewName}`).classList.add('active');
                 document.getElementById('bottom-nav').style.display = 'flex';
-                // 激活底部导航高亮
                 const navItems = document.querySelectorAll('.nav-item');
                 if(viewName === 'home') { navItems[0].classList.add('active'); fetchPosts(); }
                 if(viewName === 'post') navItems[1].classList.add('active');
@@ -151,13 +134,15 @@
             }
         }
 
-        // --- 账号系统 (Auth) ---
-        supabase.auth.onAuthStateChange((event, session) => {
+        // --- 账号系统 ---
+        supabase.auth.onAuthStateChange(async (event, session) => {
             if (session) {
                 currentUser = session.user;
+                await loadProfile(); // 登录后先加载个人信息(获取权限)
                 switchView('home');
             } else {
                 currentUser = null;
+                currentProfile = null;
                 switchView('auth');
             }
         });
@@ -166,16 +151,15 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             if(!email || password.length < 6) return showToast('请输入有效邮箱和至少6位密码');
-            
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            const { error } = await supabase.auth.signUp({ email, password });
             if (error) showToast(error.message);
-            else showToast('注册成功，请登录！(如需邮箱验证请去邮箱点击链接)');
+            else showToast('注册成功，请登录！');
         }
 
         window.handleLogin = async function() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) showToast('登录失败：' + error.message);
             else showToast('登录成功');
         }
@@ -185,15 +169,18 @@
             showToast('已退出登录');
         }
 
-        // --- 用户资料 (Profile) ---
+        // --- 用户资料与权限 ---
         async function loadProfile() {
             const { data, error } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
             if (data) {
                 currentProfile = data;
                 document.getElementById('profile-nickname').value = data.nickname;
                 if(data.avatar_url) document.getElementById('profile-avatar').src = data.avatar_url;
-                // 管理员入口展示
-                if(data.role === 'admin') document.getElementById('admin-panel').style.display = 'block';
+                
+                // 如果是站主，显示站主控制台提示
+                if(data.role === 'owner') {
+                    document.getElementById('admin-panel').style.display = 'block';
+                }
             }
         }
 
@@ -208,18 +195,13 @@
             const file = event.target.files[0];
             if (!file) return;
             showToast('图片上传中...');
-            
             const fileExt = file.name.split('.').pop();
             const fileName = `${currentUser.id}-${Math.random()}.${fileExt}`;
             
-            // 1. 上传到 Storage
             const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
             if (uploadError) return showToast('上传失败');
 
-            // 2. 获取公开 URL
             const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-            
-            // 3. 更新 Profile 表
             const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id);
             if (updateError) return showToast('更新头像失败');
             
@@ -227,20 +209,50 @@
             showToast('头像更新成功');
         }
 
+        // --- 站主管理权限功能 ---
+        window.toggleUserRole = async function(targetUserId, targetNickname) {
+            // 只有站主能触发这个功能
+            if (!currentProfile || currentProfile.role !== 'owner') return;
+            if (targetUserId === currentUser.id) return showToast('不能修改自己的权限');
+
+            // 查询目标用户当前的角色
+            const { data: targetUser } = await supabase.from('profiles').select('role').eq('id', targetUserId).single();
+            if (!targetUser) return showToast('获取用户信息失败');
+
+            const isCurrentlyAdmin = targetUser.role === 'admin';
+            const actionText = isCurrentlyAdmin ? '取消其管理员身份' : '将其设为管理员';
+            
+            if (!confirm(`确定要将 [${targetNickname}] ${actionText} 吗？`)) return;
+
+            const newRole = isCurrentlyAdmin ? 'user' : 'admin';
+            // 站主修改别人的资料
+            const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', targetUserId);
+            
+            if (error) showToast('操作失败，请检查权限');
+            else {
+                showToast(`已成功${actionText}`);
+                fetchPosts(); // 刷新列表更新徽章显示
+            }
+        }
+
         // --- 核心内容 (Posts) ---
         window.createPost = async function() {
             const content = document.getElementById('post-content').value;
+            const isAnonymous = document.getElementById('is-anonymous').checked; // 获取匿名勾选状态
+
             if (!content.trim()) return showToast('写点什么吧~');
             
             const { error } = await supabase.from('posts').insert([{ 
                 author_id: currentUser.id, 
-                content: content 
+                content: content,
+                is_anonymous: isAnonymous // 存入数据库
             }]);
             
             if (error) showToast('发布失败');
             else {
                 showToast('发布成功');
                 document.getElementById('post-content').value = '';
+                document.getElementById('is-anonymous').checked = false;
                 switchView('home');
             }
         }
@@ -249,38 +261,73 @@
             const listEl = document.getElementById('post-list');
             listEl.innerHTML = '<p style="text-align:center; color:#888;">加载中...</p>';
             
-            // 联表查询帖子和作者信息
+            // 联表查询帖子和作者信息（包括角色）
             const { data, error } = await supabase
                 .from('posts')
-                .select(`id, content, created_at, author_id, profiles(nickname, avatar_url)`)
+                .select(`id, content, created_at, author_id, is_anonymous, profiles(nickname, avatar_url, role)`)
                 .eq('status', 'active')
                 .order('created_at', { ascending: false });
                 
             if (error) return showToast('加载帖子失败');
             if (data.length === 0) return listEl.innerHTML = '<p style="text-align:center; color:#888;">暂无帖子，快去发一条吧！</p>';
 
-            listEl.innerHTML = data.map(post => `
+            // 当前用户的权限状态
+            const isOwner = currentProfile?.role === 'owner';
+            const isAdminOrOwner = isOwner || currentProfile?.role === 'admin';
+
+            listEl.innerHTML = data.map(post => {
+                const authorProfile = post.profiles;
+                let displayAvatar = authorProfile.avatar_url || 'https://via.placeholder.com/40';
+                let displayName = authorProfile.nickname;
+                let roleBadge = '';
+
+                // 角色徽章显示 (非匿名时显示)
+                if (!post.is_anonymous) {
+                    if (authorProfile.role === 'owner') roleBadge = '<span class="role-badge role-owner">站主</span>';
+                    else if (authorProfile.role === 'admin') roleBadge = '<span class="role-badge role-admin">管理员</span>';
+                }
+
+                // 匿名逻辑处理
+                if (post.is_anonymous) {
+                    displayAvatar = 'https://via.placeholder.com/40?text=Anon'; // 匿名默认头像
+                    displayName = '匿名用户';
+                    roleBadge = ''; // 匿名不显示徽章
+                    
+                    // 如果当前登录的是管理员或站主，开启“透视”功能
+                    if (isAdminOrOwner) {
+                        displayName += ` <span style="color:#FF5C5C; font-size:12px;">(真实: ${authorProfile.nickname})</span>`;
+                    }
+                }
+
+                // 权限管理：如果是站主，头像可点击
+                const avatarClickAttr = isOwner ? `onclick="toggleUserRole('${post.author_id}', '${authorProfile.nickname}')" class="avatar clickable" title="点击设置权限"` : `class="avatar"`;
+
+                // 删帖权限：作者本人、管理员、站主都可以删除
+                const canDelete = post.author_id === currentUser.id || isAdminOrOwner;
+
+                return `
                 <div class="post">
                     <div class="post-header">
-                        <img class="avatar" src="${post.profiles.avatar_url || 'https://via.placeholder.com/40'}">
+                        <img ${avatarClickAttr} src="${displayAvatar}">
                         <div class="post-meta">
-                            <div class="post-author">${post.profiles.nickname}</div>
+                            <div class="post-author">${displayName} ${roleBadge}</div>
                             <div class="post-time">${new Date(post.created_at).toLocaleString()}</div>
                         </div>
-                        ${post.author_id === currentUser.id ? `<button class="delete-btn" onclick="deletePost('${post.id}')">删除</button>` : ''}
+                        ${canDelete ? `<button class="delete-btn" onclick="deletePost('${post.id}')">删除</button>` : ''}
                     </div>
                     <div class="post-content">${post.content}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         window.deletePost = async function(postId) {
             if(!confirm('确定要删除这条帖子吗？')) return;
             const { error } = await supabase.from('posts').delete().eq('id', postId);
-            if (error) showToast('删除失败');
+            if (error) showToast('删除失败，权限不足');
             else {
                 showToast('已删除');
-                fetchPosts(); // 重新加载列表
+                fetchPosts();
             }
         }
     </script>
